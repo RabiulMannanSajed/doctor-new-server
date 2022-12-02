@@ -24,6 +24,7 @@ async function run() {
         await client.connect();
         // console.log("connected Data base");
         const servicesCollection = client.db('doctor_new').collection('services');
+        const bookingCollection = client.db('doctor_new').collection('bookings');
 
         app.get('/service', async (req, res) => {
             const query = {};
@@ -31,6 +32,28 @@ async function run() {
             const services = await cursor.toArray();
             res.send(services);
         })
+        /**
+         * Api naming Convention
+         * app.get('/booking') //get all booking
+         * app.get('/booking/:id') //get specific booking
+         * app.post('/booking') //add a new booking
+         * add.patch('/booking/:id') // specific one updating 
+         * add.delete('/booking/:id') // specific one delete
+         */
+
+        // Here add a new booking to the server site 
+        app.post('/booking', async (req, res) => {
+            const booking = req.body;
+            ///here checking client can't take multi appointment in same date cause we checking  the data here 
+            const query = { treatment: booking.treatment, date: booking.date, patient: booking.patient }
+            const exists = await bookingCollection.findOne(query);
+            if (exists) {
+                return res.send({ success: false, booking: exists })
+            }
+            const result = await bookingCollection.insertOne(booking);
+            return res.send({ success: true, result });
+        })
+
     }
     finally {
 
