@@ -32,6 +32,37 @@ async function run() {
             const services = await cursor.toArray();
             res.send(services);
         })
+
+        app.get('/available', async (req, res) => {
+            const date = req.query.date || 'May 11, 2022';
+            // const date = req.query.date;
+
+            // Step 1 : get all services
+            const services = await servicesCollection.find().toArray();
+
+            // step 2 : get the booking of that day
+            const query = { date: date };
+            const bookings = await bookingCollection.find().toArray();
+
+            services.forEach(service => {
+                const serviceBookings = bookings.filter(b => b.treatment === service.name);
+                const booked = serviceBookings.map(s => s.slot);
+                const available = service.slots.filter(s => !booked.includes(s));
+                service.available = available;
+                service.booked = serviceBookings.map(s => s.slot);
+                // service.booked = '08.00 AM - 08.30 AM'
+            })
+            res.send(bookings);
+        })
+
+        // for testing
+        app.get('/someBooking', async (req, res) => {
+            const date = req.query.date;
+            const query = { date: date };
+            const booking = await bookingCollection.find(query).toArray();
+
+            res.send(booking);
+        })
         /**
          * Api naming Convention
          * app.get('/booking') //get all booking
@@ -51,6 +82,7 @@ async function run() {
                 return res.send({ success: false, booking: exists })
             }
             const result = await bookingCollection.insertOne(booking);
+            console.log(result);
             return res.send({ success: true, result });
         })
 
